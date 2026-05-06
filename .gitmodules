@@ -1,3 +1,3 @@
 [submodule "aminor"]
 	path = aminor
-	url = ./aminor
+	url = https://github.com/Arrcus/arrcus_sw.git
