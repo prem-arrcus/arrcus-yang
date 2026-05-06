@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# post-checkout: configure sparse checkout on aminor after any clone/checkout.
+# Also triggered after git pull (via post-merge → post-checkout chain in some flows).
+#
+# Handles two cases:
+#   1. aminor not yet initialized (post-checkout ran before submodule init) → init it here.
+#   2. aminor already initialized but sparse checkout not set → configure it.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+AMINOR="$REPO_ROOT/aminor"
+
+setup_sparse() {
+    git -C "$AMINOR" sparse-checkout init --no-cone
+    git -C "$AMINOR" sparse-checkout set '*.yang'
+    git -C "$AMINOR" checkout HEAD --quiet
+    echo "aminor: sparse checkout configured (*.yang only)"
+}
+
+# Case 1: submodule not yet initialized — initialize with depth 1 then sparse.
+if [ ! -e "$AMINOR/.git" ]; then
+    git -C "$REPO_ROOT" submodule update --init --depth 1 aminor
+    setup_sparse
+    exit 0
+fi
+
+# Case 2: already initialized — configure sparse checkout if not already active.
+SPARSE_ENABLED=$(git -C "$AMINOR" config --local core.sparseCheckout 2>/dev/null || echo "false")
+if [ "$SPARSE_ENABLED" != "true" ]; then
+    setup_sparse
+fi
