@@ -1,0 +1,266 @@
+diff --git a/feature/acl/ui/arcos-openconfig-packet-match-augments.yang b/feature/acl/ui/arcos-openconfig-packet-match-augments.yang
+index 5735f56..75d269a 100644
+--- a/feature/acl/ui/arcos-openconfig-packet-match-augments.yang
++++ b/feature/acl/ui/arcos-openconfig-packet-match-augments.yang
+@@ -317,47 +317,42 @@ module arcos-openconfig-packet-match-augments {
+     }
+ 
+     uses icmp-dst-unreach-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP' and " +
+-        "icmp-type = 'arc-icmp-types:ICMP_DST_UNREACH'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP'" {
+         description
+           "Only allow ICMP Destination Unreachable code to be configured
+-          when the ICMP type is ICMP_DST_UNREACH.";
++          when the protocol is ICMP.";
+       }
+     }
+ 
+     uses icmp-redirect-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP' and " +
+-        "icmp-type = 'arc-icmp-types:ICMP_REDIRECT'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP'" {
+         description
+           "Only allow ICMP Redirect code to be configured when the
+-          ICMP type is ICMP_REDIRECT.";
++          protocol is ICMP.";
+       }
+     }
+ 
+     uses icmp-router-advert-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP' and " +
+-        "icmp-type = 'arc-icmp-types:ICMP_ROUTER_ADVERT'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP'" {
+         description
+           "Only allow ICMP Router Advertisement code to be configured
+-          when the ICMP type is ICMP_ROUTER_ADVERT.";
++          when the protocol is ICMP.";
+       }
+     }
+ 
+     uses icmp-time-exceeded-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP' and " +
+-        "icmp-type = 'arc-icmp-types:ICMP_TIME_EXCEEDED'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP'" {
+         description
+           "Only allow ICMP Time Exceeded code to be configured when the
+-          ICMP type is ICMP_TIME_EXCEEDED.";
++          protocol is ICMP.";
+       }
+     }
+ 
+     uses icmp-param-problem-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP' and " +
+-        "icmp-type = 'arc-icmp-types:ICMP_PARAM_PROBLEM'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMP'" {
+         description
+           "Only allow ICMP Parameter Problem code to be configured
+-          when the ICMP type is ICMP_PARAM_PROBLEM.";
++          when the protocol is ICMP.";
+       }
+     }
+   }
+@@ -372,56 +367,50 @@ module arcos-openconfig-packet-match-augments {
+     }
+ 
+     uses icmpv6-dst-unreach-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_DST_UNREACH'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Destination Unreachable code to be configured
+-          when the ICMPv6 type is ICMPV6_DST_UNREACH.";
++          when the protocol is ICMPv6.";
+       }
+     }
+ 
+     uses icmpv6-time-exceeded-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_TIME_EXCEEDED'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Time Exceeded code to be configured when the
+-          ICMPv6 type is ICMPV6_TIME_EXCEEDED.";
++          protocol is ICMPv6.";
+       }
+     }
+ 
+     uses icmpv6-param-problem-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_PARAM_PROBLEM'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Parameter Problem code to be configured
+-          when the ICMPv6 type is ICMPV6_PARAM_PROBLEM.";
++          when the protocol is ICMPv6.";
+       }
+     }
+ 
+     uses icmpv6-router-renumber-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_ROUTER_RENUMBER'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Router Renumbering code to be configured
+-          when the ICMPv6 type is ICMPV6_ROUTER_RENUMBER.";
++          when the protocol is ICMPv6.";
+       }
+     }
+ 
+    uses icmpv6-node-info-query-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_NODE_INFO_QUERY'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Node Information Query code to be configured
+-          when the ICMPv6 type is ICMPV6_NODE_INFO_QUERY.";
++          when the protocol is ICMPv6.";
+       }
+     }
+ 
+    uses icmpv6-node-info-response-code-field-top {
+-      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6' and " +
+-        "icmpv6-type = 'arc-icmpv6-types:ICMPV6_NODE_INFO_RESPONSE'" {
++      when "oc-acl:protocol = 'oc-pkt-match-types:IP_ICMPV6'" {
+         description
+           "Only allow ICMPv6 Node Information Response code to be configured
+-          when the ICMPv6 type is ICMPV6_NODE_INFO_RESPONSE.";
++          when the protocol is ICMPv6.";
+       }
+     }
+   }
+diff --git a/feature/nat/ui/arcos-ietf-nat-deviations.yang b/feature/nat/ui/arcos-ietf-nat-deviations.yang
+index 20fe4c4..fe73287 100644
+--- a/feature/nat/ui/arcos-ietf-nat-deviations.yang
++++ b/feature/nat/ui/arcos-ietf-nat-deviations.yang
+@@ -218,7 +218,7 @@ module arcos-ietf-nat-deviations {
+   }
+   deviation "/nat:nat/nat:instances/nat:instance/nat:type" {
+     deviate add {
+-       default "basic-nat44";
++       default "nat:basic-nat44";
+     }
+     description "default source nat";
+   }
+diff --git a/feature/qos/ui/arcos-qos-policy-deviations.yang b/feature/qos/ui/arcos-qos-policy-deviations.yang
+index a29c1dd..fb6ce75 100644
+--- a/feature/qos/ui/arcos-qos-policy-deviations.yang
++++ b/feature/qos/ui/arcos-qos-policy-deviations.yang
+@@ -61,6 +61,7 @@ module arcos-qos-policy-deviations {
+       "Not supported in this release";
+   }
+ 
++  /* Remove duplicates
+   deviation "/arc-qos:qos/arc-qos-pol:policies/arc-qos-pol:policy"
+           + "/arc-qos-pol:classifiers/arc-qos-pol:classifier"
+           + "/arc-qos-pol:actions/arc-qos-pol:action"
+@@ -78,7 +79,7 @@ module arcos-qos-policy-deviations {
+     description
+       "Not supported in this release";
+   }
+-
++  */
+   deviation "/arc-qos:qos/arc-qos-pol:policies/arc-qos-pol:policy"
+           + "/arc-qos-pol:classifiers/arc-qos-pol:classifier"
+           + "/arc-qos-pol:actions/arc-qos-pol:action"
+diff --git a/feature/sflow/ui/arcos-sflow.yang b/feature/sflow/ui/arcos-sflow.yang
+index 1bc69e0..0b4a6b5 100644
+--- a/feature/sflow/ui/arcos-sflow.yang
++++ b/feature/sflow/ui/arcos-sflow.yang
+@@ -24,6 +24,12 @@ module arcos-sflow {
+   import arcos-openconfig-system-augments {
+     prefix arc-oc-sys-aug;
+   }
++  import openconfig-if-ethernet {
++    prefix oc-eth;
++  }
++  import openconfig-if-aggregate {
++    prefix oc-lag;
++  }
+ 
+   organization
+     "Arrcus, Inc.";
+diff --git a/mgmt/ui_common/ui/arcos-openconfig-macsec-deviations.yang b/mgmt/ui_common/ui/arcos-openconfig-macsec-deviations.yang
+index 5338845..860272c 100644
+--- a/mgmt/ui_common/ui/arcos-openconfig-macsec-deviations.yang
++++ b/mgmt/ui_common/ui/arcos-openconfig-macsec-deviations.yang
+@@ -62,11 +62,13 @@ module arcos-openconfig-macsec-deviations {
+     description "Not Supported in this release";
+   }
+ 
++  /*
+   deviation "/oc-macsec:macsec/oc-macsec:mka/oc-macsec:policies/oc-macsec:policy" +
+                  "/oc-macsec:config/oc-macsec:macsec-cipher-suite" {
+     deviate not-supported;
+     description "Not Supported in this release";
+   }
++  */
+ 
+   deviation "/oc-macsec:macsec/oc-macsec:mka/oc-macsec:policies/oc-macsec:policy" +
+                  "/oc-macsec:state/oc-macsec:macsec-cipher-suite" {
+diff --git a/mgmt/ui_common/ui/arcos-openconfig-platform-deviations.yang b/mgmt/ui_common/ui/arcos-openconfig-platform-deviations.yang
+index 0343663..efaf549 100644
+--- a/mgmt/ui_common/ui/arcos-openconfig-platform-deviations.yang
++++ b/mgmt/ui_common/ui/arcos-openconfig-platform-deviations.yang
+@@ -238,10 +238,14 @@ module arcos-openconfig-platform-deviations {
+     deviate not-supported;
+     description "Not supported in this release";
+   }
++  /*
++  Note: The 'cpu' container itself is deviated to not-supported at line 253
++        So it is not possible to deviate 'utilization', 'state', 'config' which is a child of 'cpu'
+   deviation "/oc-platform:components/oc-platform:component/oc-platform:cpu/oc-platform-cpu:utilization" {
+     deviate not-supported;
+     description "Not supported in this release";
+   }
++  */
+   deviation "/oc-platform:components/oc-platform:component/oc-platform:cpu/oc-platform:state" {
+     deviate not-supported;
+     description "Not supported in this release";
+diff --git a/mgmt/ui_common/ui/arcos-openconfig-platform-port-deviations.yang b/mgmt/ui_common/ui/arcos-openconfig-platform-port-deviations.yang
+index 4d758cd..ab69356 100644
+--- a/mgmt/ui_common/ui/arcos-openconfig-platform-port-deviations.yang
++++ b/mgmt/ui_common/ui/arcos-openconfig-platform-port-deviations.yang
+@@ -36,8 +36,12 @@ module arcos-openconfig-platform-port-deviations {
+        Network Configuration Protocol (NETCONF)";
+   }
+ 
++  /*
++  Note: arcos-openconfig-platform-deviations.yang already deviates port to not-supported
++        So it is not possible to deviate port/breakout-mode (as node doesn't exist at this point)
+   deviation "/oc-platform:components/oc-platform:component/oc-platform:port/oc-platform-port:breakout-mode" {
+     deviate not-supported;
+     description "Not supported in this release";
+   }
++  */
+ }
+diff --git a/routing/rpol/ui/arcos-openconfig-routing-policy-deviations.yang b/routing/rpol/ui/arcos-openconfig-routing-policy-deviations.yang
+index 24ed18b..00d2a39 100644
+--- a/routing/rpol/ui/arcos-openconfig-routing-policy-deviations.yang
++++ b/routing/rpol/ui/arcos-openconfig-routing-policy-deviations.yang
+@@ -42,6 +42,7 @@ module arcos-openconfig-routing-policy-deviations {
+ 
+   deviation "/oc-rpol:routing-policy/oc-rpol:defined-sets" +
+             "/oc-rpol:tag-sets" {
++    deviate not-supported;
+     description "Not supported in this release.";
+   }
+ 
+@@ -95,6 +96,9 @@ module arcos-openconfig-routing-policy-deviations {
+     description "Not supported in this release.";
+   }
+ 
++  /*
++  Note: tag-sets is already made not-supported earlier.
++        So cannot set deviations for its children
+   deviation "/oc-rpol:routing-policy/oc-rpol:defined-sets" +
+             "/oc-rpol:tag-sets/oc-rpol:tag-set/oc-rpol:config" +
+             "/oc-rpol:tag-set-name" {
+@@ -123,6 +127,7 @@ module arcos-openconfig-routing-policy-deviations {
+     }
+     description "Limit to only unsigned int type";
+   }
++  */
+ 
+   deviation "/oc-rpol:routing-policy/oc-rpol:policy-definitions" +
+             "/oc-rpol:policy-definition/oc-rpol:statements" +
