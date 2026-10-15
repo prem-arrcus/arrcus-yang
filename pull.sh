@@ -52,9 +52,6 @@ if [ -d "${TARGET_NAME}" ]; then
 else
     echo " -- Pulling yang files"
     git clone --no-checkout --branch "${BRANCH}" --depth=1 --filter=blob:none --single-branch "${REPO}" "${TARGET_NAME}"
-
-    grep -q '# Git submodules' .gitignore || echo -e "\n# Git submodules" >> $TOP_DIR/.gitignore
-    printf '!%s\n' "${TARGET_NAME}" >> $TOP_DIR/.gitignore
 fi
 echo
 
@@ -63,8 +60,14 @@ if git config --get-all "submodule.${MODULE_NAME}.url" >/dev/null; then
 else
     echo "Setting $TARGET_NAME as a git submodule"
     echo "git submodule add --name ${MODULE_NAME} ${REPO} ${TARGET_NAME}"
+    # 'git submodule add' refuses ignored paths and has no force flag, so
+    # un-ignore temporarily; the exception is removed again right after the add
+    printf '!%s\n' "${TARGET_NAME}" >> .gitignore
     git submodule add --name "${MODULE_NAME}" "${REPO}" "${TARGET_NAME}"
     git submodule absorbgitdirs -- "${TARGET_NAME}"
+    # The temporary '!${TARGET_NAME}' exception is no longer needed: a tracked
+    # gitlink is not subject to ignore rules
+    { grep -vxF "!${TARGET_NAME}" .gitignore || true; } > .gitignore.tmp && mv .gitignore.tmp .gitignore
     echo
 fi
 
