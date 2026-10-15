@@ -5,3 +5,6 @@
 !.gitignore
 !pull.sh
 !build_pyang_bindings.sh
+!yang-changes.patch
+!confd
+confd/*
