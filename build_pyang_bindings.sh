@@ -39,7 +39,7 @@ PLUGIN_DIR="${SCRIPT_DIR}/plugins"
 OPER_COMPONENTS="${SCRIPT_DIR}/oper-components.txt"
 CONFD_BRANCH="${4:-$BRANCH}"
 LOG_FILE=logs/build_pyang_bindings.log.txt
-TARGET_NAME="${TARGET/\//-}"
+TARGET_NAME="${TARGET//\//-}"
 BINDINGS="${BINDINGS:-full,config,oper}"
 # Each pyang job holds the full parsed schema (~400MB), so don't scale with nproc blindly
 JOBS="${JOBS:-$(( $(nproc) < 8 ? $(nproc) : 8 ))}"
@@ -172,7 +172,7 @@ echo
 # Pull needed yang files off specified branch from arrcus_sw repo
 if [ ! -d "$TARGET_NAME" ]; then
     echo "Pulling yang files"
-    ./pull.sh $BRANCH $TARGET $REPO || die "Pulling yang files from arrcus_sw repo (branch: $BRANCH) had failed"
+    ./pull.sh "$BRANCH" "$TARGET_NAME" "$REPO" || die "Pulling yang files from arrcus_sw repo (branch: $BRANCH) had failed"
     echo
 fi
 
