@@ -154,7 +154,8 @@ pyangbind as usual. Whatever is left is what gets generated.
 
 ### Plugin options
 The plugin registers a new output format, `-f pybind-split`. With no extra options
-its output is the same as `-f pybind`. It adds:
+its output is the same as `-f pybind`, except for the submodule duplicates
+described below. It adds:
 
 | Option                         | Effect                                                             |
 |--------------------------------|--------------------------------------------------------------------|
@@ -184,6 +185,26 @@ Two things make this safe:
   identities that identityrefs rely on.
 - **Leafrefs are generated as plain strings** (the build doesn't use
   `--use-xpathhelper`), so pruning away a leafref's target doesn't break anything.
+
+### Submodule duplicates
+pyangbind emits a module's whole data tree once for the module, and again for
+every submodule the module includes. pyang has already merged the submodules'
+nodes into the module, so these extra copies are identical trees under their own
+top-level class (e.g. `openconfig_network_instance_l2`). Nothing in the module's
+own tree refers to them. `openconfig-network-instance` includes
+`openconfig-network-instance-l2`, so all of `/network-instances` was emitted twice,
+which doubled the size of most oper files and added 8.5MB to the config file. The
+plugin skips these copies.
+
+## Why the bgp oper file is still large
+Most of `oper/bgp_bindings.py` (~64MB of ~74MB) is `bgp/rib`. pyangbind generates a
+separate class for every place a grouping is used. In
+`arcos-openconfig-rib-bgp-augments.yang`, the `route-attr-set-top` grouping (the
+"embedded path attributes" of a route, about 50 classes) is augmented into every
+route list: loc-rib, adj-rib-in-pre, adj-rib-in-post and adj-rib-out of every
+AFI-SAFI, 61 uses in all. That alone accounts for ~40MB. Each route also refers to
+the same attributes in the shared `rib/attr-sets` through `attr-index`. Making
+the file much smaller would mean changing the model, i.e. the API.
 
 ## Checking the output
 Quick checks after a build:

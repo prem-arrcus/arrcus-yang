@@ -127,6 +127,7 @@ run_pyang() {
       echo "${name}" >> "${FAILED_JOBS}"
     fi
   } &
+  JOB_PIDS+=($!)
 }
 
 # Validate options
@@ -218,6 +219,7 @@ echo
 FAILED_JOBS="${JOB_LOG_DIR}/failed-jobs.txt"
 UNCLAIMED_REPORT="${JOB_LOG_DIR}/unclaimed-state.txt"
 rm -f "${FAILED_JOBS}" "${UNCLAIMED_REPORT}"
+JOB_PIDS=()
 
 if want full; then
   run_pyang full "../${BUILD_DIR}/bindings.py"
@@ -234,7 +236,9 @@ if want oper; then
   done
   run_pyang unclaimed-state "${UNCLAIMED_REPORT}" --pybind-report-unclaimed ${ALL_OPER_SUBTREES}
 fi
-wait
+# Wait for the pyang jobs only: a bare 'wait' also waits for the tee process
+# substitution logging stdout, which never exits while the script runs
+wait "${JOB_PIDS[@]}" || true
 popd >/dev/null
 echo
 

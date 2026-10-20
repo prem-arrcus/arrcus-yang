@@ -2,7 +2,9 @@
 pyang plugin wrapping pyangbind's 'pybind' output format, so that bindings
 can be generated for a subset of the schema tree.
 
-  -f pybind-split                         same output as '-f pybind'
+  -f pybind-split                         same output as '-f pybind', minus
+                                          pyangbind's duplicate copies of a
+                                          module's tree per included submodule
   --pybind-filter=config                  only config true nodes
   --pybind-filter=state                   only config false nodes
   --pybind-subtree=<path> (repeatable)    only nodes at/below these paths
@@ -82,7 +84,23 @@ class PybindSplit(pybind.PyangBindClass):
             for module in modules:
                 prune(module, keep, not targets, targets)
 
-        pybind.build_pybind(ctx, modules, fd)
+        # pyangbind emits a module's data tree once for the module and once more
+        # for each submodule it includes, as it passes the module's i_children
+        # with each submodule. pyang has already merged submodule nodes into the
+        # module's i_children, so the extra copies (rooted at e.g. class
+        # openconfig_network_instance_l2) are unreachable duplicates; skip them
+        get_children = pybind.get_children
+
+        def get_children_once(ctx, fd, i_children, module, parent, *args, **kwargs):
+            if parent is module and module.keyword == "submodule":
+                return
+            return get_children(ctx, fd, i_children, module, parent, *args, **kwargs)
+
+        pybind.get_children = get_children_once
+        try:
+            pybind.build_pybind(ctx, modules, fd)
+        finally:
+            pybind.get_children = get_children
 
 
 def die(msg):
