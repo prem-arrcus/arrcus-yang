@@ -43,7 +43,9 @@ class PybindSplit(pybind.PyangBindClass):
 
     def add_opts(self, optparser):
         super().add_opts(optparser)
-        option_group = optparse.OptionGroup(optparser, "pybind-split output specific options")
+        option_group = optparse.OptionGroup(
+            optparser, "pybind-split output specific options"
+        )
         option_group.add_option(
             "--pybind-filter",
             dest="pybind_filter",
@@ -96,15 +98,17 @@ class PybindSplit(pybind.PyangBindClass):
                 return
             return get_children(ctx, fd, i_children, module, parent, *args, **kwargs)
 
-        pybind.get_children = get_children_once
+        # setattr, as type checkers reject assigning a different function to a
+        # module's function attribute
+        setattr(pybind, "get_children", get_children_once)  # noqa: B010
         try:
             pybind.build_pybind(ctx, modules, fd)
         finally:
-            pybind.get_children = get_children
+            setattr(pybind, "get_children", get_children)  # noqa: B010
 
 
 def die(msg):
-    sys.stderr.write("FATAL: %s\n" % msg)
+    sys.stderr.write(f"FATAL: {msg}\n")
     sys.exit(1)
 
 
@@ -128,27 +132,31 @@ def data_children(stmt):
 def resolve_path(ctx, modules, path):
     segments = [s for s in path.strip().split("/") if s]
     if not segments or ":" not in segments[0]:
-        die("--pybind-subtree '%s': path must start with '/<module>:<name>'" % path)
+        die(f"--pybind-subtree '{path}': path must start with '/<module>:<name>'")
 
     modname, name = segments[0].split(":", 1)
     module = next((m for m in modules if m.arg == modname), None)
     if module is None:
-        die("--pybind-subtree '%s': module '%s' is not one of the modules being built" % (path, modname))
+        die(
+            f"--pybind-subtree '{path}': module '{modname}' is not one of the modules being built"
+        )
 
     node = module
     walked = ""
     for seg in segments:
         modname, name = seg.split(":", 1) if ":" in seg else (None, seg)
         matches = [
-            ch for ch in data_children(node) if ch.arg == name and (modname is None or defining_module(ch) == modname)
+            ch
+            for ch in data_children(node)
+            if ch.arg == name and (modname is None or defining_module(ch) == modname)
         ]
         walked += "/" + seg
         if not matches:
-            die("--pybind-subtree '%s': no schema node at '%s'" % (path, walked))
+            die(f"--pybind-subtree '{path}': no schema node at '{walked}'")
         if len(matches) > 1:
+            defined_in = ", ".join(sorted(defining_module(m) for m in matches))
             die(
-                "--pybind-subtree '%s': '%s' is ambiguous (defined in %s), add a module prefix"
-                % (path, walked, ", ".join(sorted(defining_module(m) for m in matches)))
+                f"--pybind-subtree '{path}': '{walked}' is ambiguous (defined in {defined_in}), add a module prefix"
             )
         node = matches[0]
     return node
@@ -180,7 +188,10 @@ def prune(stmt, keep, in_scope, targets):
             elif ch.keyword == "leaf" and ch.arg in keys:
                 kept.append(ch)
         elif prune(ch, keep, ch_in_scope, targets) or (
-            ch.keyword == "container" and ch.search_one("presence") is not None and ch_in_scope and keep(ch)
+            ch.keyword == "container"
+            and ch.search_one("presence") is not None
+            and ch_in_scope
+            and keep(ch)
         ):
             kept.append(ch)
             found = True
@@ -221,7 +232,9 @@ def report_unclaimed(modules, targets, fd):
             if id(ch) in targets:
                 continue
             mod = defining_module(ch)
-            ch_path = "%s/%s" % (path, ch.arg if mod == parent_mod else "%s:%s" % (mod, ch.arg))
+            ch_path = (
+                f"{path}/{ch.arg}" if mod == parent_mod else f"{path}/{mod}:{ch.arg}"
+            )
             if id(ch) in target_ancestors:
                 walk(ch, ch_path, mod)
             elif ch.keyword in LEAF_KEYWORDS or not hasattr(ch, "i_children"):
@@ -236,6 +249,8 @@ def report_unclaimed(modules, targets, fd):
         walk(module, "", None)
 
     total = sum(n for _, n in rows)
-    fd.write("# %d state leaves in %d subtrees not claimed by any --pybind-subtree\n" % (total, len(rows)))
+    fd.write(
+        f"# {total} state leaves in {len(rows)} subtrees not claimed by any --pybind-subtree\n"
+    )
     for path, n in sorted(rows):
-        fd.write("%6d  %s\n" % (n, path))
+        fd.write(f"{n:6d}  {path}\n")

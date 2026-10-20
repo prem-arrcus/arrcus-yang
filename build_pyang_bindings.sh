@@ -84,7 +84,7 @@ apply_yang_patch() {
 }
 
 raw_hdr() {
-  v="$@"
+  v="$*"
   echo "$v"
   printf -- "${DELIM:-=}%.0s" $(seq 1 ${#v})
   echo
@@ -117,7 +117,7 @@ run_pyang() {
   done
   echo " -- Started ${name}: ${out#../}"
   {
-    if pyang -Wnone --plugindir "${PLUGIN_DIR}" -f pybind-split --lax-quote-checks --ignore-error UNUSED_IMPORT --ignore-error XPATH_NODE_NOT_FOUND1 ${deviations} --path="$YANG_PATH" "$@" -o "$out" ${yang_modules} > "$log" 2>&1; then
+    if pyang -Wnone --plugindir "${PLUGIN_DIR}" -f pybind-split --lax-quote-checks --ignore-error UNUSED_IMPORT --ignore-error XPATH_NODE_NOT_FOUND1 "${deviations[@]}" --path="$YANG_PATH" "$@" -o "$out" "${yang_modules[@]}" > "$log" 2>&1; then
       if [[ "$out" == *.py ]]; then
         apply_final_hacks "$out"
       fi
@@ -139,16 +139,17 @@ done
 # Read the oper components: '<component> <schema-path>' per line
 declare -A OPER_SUBTREES=()
 OPER_COMPONENT_NAMES=()
-ALL_OPER_SUBTREES=""
+ALL_OPER_SUBTREES=()
 if want oper; then
   [ -f "${OPER_COMPONENTS}" ] || die "${OPER_COMPONENTS} not found"
   while read -r comp path extra; do
     [[ -z "$comp" || "$comp" == \#* ]] && continue
-    [[ -n "$path" && -z "$extra" ]] || die "$(basename "${OPER_COMPONENTS}"): expected '<component> <schema-path>', got: $comp $path $extra"
-    [[ "$comp" =~ ^[A-Za-z0-9_-]+$ ]] || die "$(basename "${OPER_COMPONENTS}"): invalid component name '$comp'"
+    [[ -n "$path" && -z "$extra" ]] || die "${OPER_COMPONENTS##*/}: expected '<component> <schema-path>', got: $comp $path $extra"
+    [[ "$comp" =~ ^[A-Za-z0-9_-]+$ ]] || die "${OPER_COMPONENTS##*/}: invalid component name '$comp'"
     [[ -n "${OPER_SUBTREES[$comp]+x}" ]] || OPER_COMPONENT_NAMES+=("$comp")
+    # Space separated; paths can't contain whitespace, as the manifest is split on it
     OPER_SUBTREES[$comp]+=" --pybind-subtree=$path"
-    ALL_OPER_SUBTREES+=" --pybind-subtree=$path"
+    ALL_OPER_SUBTREES+=("--pybind-subtree=$path")
   done < "${OPER_COMPONENTS}"
   (( ${#OPER_COMPONENT_NAMES[@]} > 0 )) || die "No components found in ${OPER_COMPONENTS}"
 fi
@@ -165,7 +166,8 @@ else
 fi
 # Install needed python pkgs
 echo " -- Installing pyang module"
-source ${VENV}/bin/activate || die "Activating python virtual venv ($VENV) failed"
+# shellcheck source=/dev/null
+source "${VENV}/bin/activate" || die "Activating python virtual venv ($VENV) failed"
 uv pip install "git+ssh://git@github.com/prem-arrcus/pyang.git"
 uv pip install "git+ssh://git@github.com/prem-arrcus/pyangbind.git"
 echo
@@ -182,30 +184,38 @@ if [ ! -d "confd/$CONFD_BRANCH" ]; then
     echo "Pulling confd"
     mkdir -p confd
     pushd confd >/dev/null
-    ../pull.sh $CONFD_BRANCH '' git@github.com:Arrcus/confd.git || die "Pulling yang files from confd repo (branch: $BRANCH) had failed"
+    ../pull.sh "$CONFD_BRANCH" '' git@github.com:Arrcus/confd.git || die "Pulling yang files from confd repo (branch: $BRANCH) had failed"
     popd >/dev/null
     echo
 fi
 
 # Prepare
 BUILD_DIR="build/${TARGET_NAME}"
-mkdir -p $BUILD_DIR
-pushd ${TARGET_NAME} >/dev/null
+mkdir -p "$BUILD_DIR"
+pushd "${TARGET_NAME}" >/dev/null
 apply_yang_patch
 CONFD=../confd/$CONFD_BRANCH
 echo "REPO: ${TARGET_NAME}, BUILD_DIR: $BUILD_DIR, Confd DIR: confd/$CONFD_BRANCH"
 echo "PLUGIN_DIR: $PLUGIN_DIR, BINDINGS: $BINDINGS, JOBS: $JOBS"
-yang_modules=$(ls **/*.yang | grep -Ev "(deviations|annotations|ann).yang|^third_party" | cut -d' ' -f1 | xargs)
-deviations="$(for f in **/*deviations.yang; do echo --deviation-module=$f; done | xargs)"
+skip_modules_re='(deviations|annotations|ann).yang|^third_party'
+yang_modules=()
+for f in **/*.yang; do
+  [[ "$f" =~ $skip_modules_re ]] || yang_modules+=("$f")
+done
+deviations=()
+for f in **/*deviations.yang; do
+  [ -e "$f" ] || continue
+  deviations+=("--deviation-module=$f")
+done
 YANG_PATH="$(fd --type d --relative-path --regex '^(ui|snmp|cast)$' | tr '\n' :)$CONFD/src/confd/yang:$CONFD/src/confd/snmp/yang/:third_party/openconfig/models"
 
 hdr "Building pyang bindings"
 # Log all important vars
 hdr2 "YANG Modules:"
-echo "${yang_modules}" | tr ' ' '\n'
+printf '%s\n' "${yang_modules[@]}"
 echo
 hdr2 "Deviation files:"
-echo "${deviations}" | tr ' ' '\n'
+printf '%s\n' "${deviations[@]}"
 echo
 hdr2 "YANG_PATH:"
 echo "${YANG_PATH}" | tr ':' '\n'
@@ -214,7 +224,7 @@ echo
 
 # Build
 echo "Building pyangbind bindings (per-job logs: ${JOB_LOG_DIR}/<job>.log)"
-echo -e "Invoking (per job)\n  -- pyang -Wnone --plugindir ${PLUGIN_DIR} -f pybind-split --lax-quote-checks --ignore-error UNUSED_IMPORT --ignore-error XPATH_NODE_NOT_FOUND1 ${deviations} --path=$YANG_PATH <job-args> -o <output> ${yang_modules}"
+echo -e "Invoking (per job)\n  -- pyang -Wnone --plugindir ${PLUGIN_DIR} -f pybind-split --lax-quote-checks --ignore-error UNUSED_IMPORT --ignore-error XPATH_NODE_NOT_FOUND1 ${deviations[*]} --path=$YANG_PATH <job-args> -o <output> ${yang_modules[*]}"
 echo
 FAILED_JOBS="${JOB_LOG_DIR}/failed-jobs.txt"
 UNCLAIMED_REPORT="${JOB_LOG_DIR}/unclaimed-state.txt"
@@ -232,9 +242,10 @@ if want oper; then
   mkdir -p "../${BUILD_DIR}/oper"
   rm -f "../${BUILD_DIR}/oper/"*_bindings.py
   for comp in "${OPER_COMPONENT_NAMES[@]}"; do
-    run_pyang "oper-${comp}" "../${BUILD_DIR}/oper/${comp//-/_}_bindings.py" --pybind-filter=state ${OPER_SUBTREES[$comp]}
+    read -ra subtrees <<< "${OPER_SUBTREES[$comp]}"
+    run_pyang "oper-${comp}" "../${BUILD_DIR}/oper/${comp//-/_}_bindings.py" --pybind-filter=state "${subtrees[@]}"
   done
-  run_pyang unclaimed-state "${UNCLAIMED_REPORT}" --pybind-report-unclaimed ${ALL_OPER_SUBTREES}
+  run_pyang unclaimed-state "${UNCLAIMED_REPORT}" --pybind-report-unclaimed "${ALL_OPER_SUBTREES[@]}"
 fi
 # Wait for the pyang jobs only: a bare 'wait' also waits for the tee process
 # substitution logging stdout, which never exits while the script runs
