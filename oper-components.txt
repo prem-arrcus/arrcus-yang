@@ -55,29 +55,51 @@ interfaces      /ietf-interfaces:interfaces-state
 interfaces      /arcos-interfaces-cache:ifcache-entries
 lacp            /openconfig-lacp:lacp
 vlans           /openconfig-vlan:vlans
-neighbor        /arcos-neighbor:arp-entries
-neighbor        /arcos-neighbor:ndp-entries
-neighbor        /arcos-arp-nd-global:ip-neighbor
 
-# --- System / platform ----------------------------------------------------------
-system          /openconfig-system:system
-system          /arcos-process:processes
-system          /arcos-event:event
-system          /arcos-license:licenses
-system          /arcos-trace:trace
-system          /arcos-corefile:cores
-system          /arcos-apply-path:apply-paths
-runtime         /arcos-runtime:runtime-instances
-hardware        /arcos-hardware:hardware
-hardware        /arcos-chassis:chassis
-platform        /openconfig-platform:components
-datapath        /arcos-datapath:datapath-instances
-datapath        /arcos-dpal:dpal
-mbroker         /arcos-mbroker:mbroker
-mbroker         /arcos-mpsc:mpsc-client
-adjmgr          /arcos-adjmgr:adjmgr
-debug           /arcos-debug:debug
-telemetry       /openconfig-telemetry:telemetry-system
+# --- Infra ----------------------------------------------------------------------
+# System, platform and management state that isn't a network protocol, all in
+# one file: oper/infra_bindings.py
+# system
+infra           /openconfig-system:system
+infra           /arcos-process:processes
+infra           /arcos-event:event
+infra           /arcos-license:licenses
+infra           /arcos-trace:trace
+infra           /arcos-corefile:cores
+infra           /arcos-apply-path:apply-paths
+# runtime
+infra           /arcos-runtime:runtime-instances
+# hardware
+infra           /arcos-hardware:hardware
+infra           /arcos-chassis:chassis
+# platform
+infra           /openconfig-platform:components
+# datapath
+infra           /arcos-datapath:datapath-instances
+infra           /arcos-dpal:dpal
+# mbroker
+infra           /arcos-mbroker:mbroker
+infra           /arcos-mpsc:mpsc-client
+# adjmgr
+infra           /arcos-adjmgr:adjmgr
+# debug
+infra           /arcos-debug:debug
+# telemetry
+infra           /openconfig-telemetry:telemetry-system
+# monitor
+infra           /arcos-monitor:monitor-session
+# multicloud
+infra           /arcos-multicloud:multicloud
+# keychain
+infra           /openconfig-keychain:keychains
+# sync
+infra           /arcos-sync-e:sync-e
+infra           /arcos-gnss:gnss
+infra           /arcos-dpll:dpll
+# neighbor
+infra           /arcos-neighbor:arp-entries
+infra           /arcos-neighbor:ndp-entries
+infra           /arcos-arp-nd-global:ip-neighbor
 
 # --- Features -------------------------------------------------------------------
 acl             /openconfig-acl:acl
@@ -99,13 +121,7 @@ relay-agent     /openconfig-relay-agent:relay-agent
 evpn            /arcos-evpn:evpn
 oam             /arcos-oam:oam
 port-security   /arcos-portsec:port-security
-keychain        /openconfig-keychain:keychains
-multicloud      /arcos-multicloud:multicloud
-monitor         /arcos-monitor:monitor-session
 ptp             /ietf-ptp:ptp
-sync            /arcos-sync-e:sync-e
-sync            /arcos-gnss:gnss
-sync            /arcos-dpll:dpll
 
 # --- SNMP MIBs ------------------------------------------------------------------
 snmp-mibs       /ARRCUS-BGP4V2-MIB:ARRCUS-BGP4V2-MIB

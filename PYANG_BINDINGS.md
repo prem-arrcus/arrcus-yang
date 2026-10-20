@@ -83,6 +83,12 @@ interfaces /openconfig-interfaces:interfaces
 - **One file per component.** Repeat a component on several lines to give it
   several subtrees; they all go into the same file (`ospf` above gets both
   `ospfv2` and `ospfv3`).
+- **How state is grouped.** Network protocols, features and everything under
+  `/network-instances` each get their own file. System, platform and management
+  state that isn't a network protocol (system, runtime, hardware, platform,
+  datapath, mbroker, adjmgr, debug, telemetry, monitor, multicloud, keychain,
+  sync, neighbor) shares one `infra` component, i.e. `oper/infra_bindings.py`. Comment lines
+  in the manifest mark which original component each `infra` path belongs to.
 - **Path syntax** is `/module:name/name/other-module:name/...`.
   - The prefix is the YANG **module name** (not the module's prefix).
   - The first segment always needs one. After that, a prefix is needed only where
