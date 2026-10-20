@@ -13,8 +13,8 @@ usage() {
     echo "Environment:"
     echo "  BINDINGS=full,config,oper  Bindings to build (default: all)"
     echo "                               full:   build/<target>/bindings.py"
-    echo "                               config: build/<target>/config_bindings.py"
-    echo "                               oper:   build/<target>/oper/<component>_bindings.py, per oper-components.txt"
+    echo "                               config: build/<target>/config.py"
+    echo "                               oper:   build/<target>/oper/<component>.py, per oper-components.txt"
     echo "  JOBS=<n>                   Max pyang processes run in parallel (default: nproc, capped at 8)"
     echo
     echo "Example:"
@@ -49,8 +49,6 @@ mkdir -p logs build "$JOB_LOG_DIR"
 
 # Redirect stdout to logfile & stderr to both terminal & logfile
 echo "Logs File: $LOG_FILE"
-#exec > $LOG_FILE
-#exec 2> >(tee --ignore-interrupts -a $LOG_FILE >&2)
 exec > >(tee --ignore-interrupts -a $LOG_FILE >&2) 2>&1
 echo
 
@@ -235,15 +233,15 @@ if want full; then
   run_pyang full "../${BUILD_DIR}/bindings.py"
 fi
 if want config; then
-  run_pyang config "../${BUILD_DIR}/config_bindings.py" --pybind-filter=config
+  run_pyang config "../${BUILD_DIR}/config.py" --pybind-filter=config
 fi
 if want oper; then
   # Remove stale outputs, e.g. of components no longer in the manifest
   mkdir -p "../${BUILD_DIR}/oper"
-  rm -f "../${BUILD_DIR}/oper/"*_bindings.py
+  rm -f "../${BUILD_DIR}/oper/"*.py
   for comp in "${OPER_COMPONENT_NAMES[@]}"; do
     read -ra subtrees <<< "${OPER_SUBTREES[$comp]}"
-    run_pyang "oper-${comp}" "../${BUILD_DIR}/oper/${comp//-/_}_bindings.py" --pybind-filter=state "${subtrees[@]}"
+    run_pyang "oper-${comp}" "../${BUILD_DIR}/oper/${comp//-/_}.py" --pybind-filter=state "${subtrees[@]}"
   done
   run_pyang unclaimed-state "${UNCLAIMED_REPORT}" --pybind-report-unclaimed "${ALL_OPER_SUBTREES[@]}"
 fi
@@ -263,9 +261,13 @@ if [ -f "${UNCLAIMED_REPORT}" ] && grep -qv '^#' "${UNCLAIMED_REPORT}"; then
   echo
 fi
 
+# Create __init__.py to make the creaed dirs as python modules
+touch "${BUILD_DIR}/__init__.py"
+touch "${BUILD_DIR}/oper/__init__.py"
+
 echo "Done"
 echo "Bindings:"
 want full && ls -lh "${BUILD_DIR}/bindings.py"
-want config && ls -lh "${BUILD_DIR}/config_bindings.py"
-want oper && ls -lh "${BUILD_DIR}/oper/"*_bindings.py
+want config && ls -lh "${BUILD_DIR}/config.py"
+want oper && ls -lh "${BUILD_DIR}/oper/"*.py
 exit 0

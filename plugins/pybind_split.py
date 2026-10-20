@@ -4,7 +4,9 @@ can be generated for a subset of the schema tree.
 
   -f pybind-split                         same output as '-f pybind', minus
                                           pyangbind's duplicate copies of a
-                                          module's tree per included submodule
+                                          module's tree per included submodule,
+                                          and with identity/enumeration dicts
+                                          defined once and shared
   --pybind-filter=config                  only config true nodes
   --pybind-filter=state                   only config false nodes
   --pybind-subtree=<path> (repeatable)    only nodes at/below these paths
@@ -21,6 +23,7 @@ module stays in the module list, since pyangbind gathers typedefs and
 identities from them, even when their data tree is pruned away.
 """
 
+import io
 import optparse
 import sys
 
@@ -101,10 +104,65 @@ class PybindSplit(pybind.PyangBindClass):
         # setattr, as type checkers reject assigning a different function to a
         # module's function attribute
         setattr(pybind, "get_children", get_children_once)  # noqa: B010
+        out = io.StringIO()
         try:
-            pybind.build_pybind(ctx, modules, fd)
+            pybind.build_pybind(ctx, modules, out)
         finally:
             setattr(pybind, "get_children", get_children)  # noqa: B010
+        fd.write(share_restriction_dicts(out.getvalue()))
+
+
+def end_of_dict_literal(text, start):
+    """Index just past the {...} literal that starts at text[start]"""
+    depth = 0
+    i = start
+    while True:
+        c = text[i]
+        if c in "'\"":
+            i += 1
+            while text[i] != c:
+                i += 2 if text[i] == "\\" else 1
+        elif c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+
+
+def share_restriction_dicts(text):
+    """
+    pyangbind writes the full dict of an identityref's identities (or an
+    enumeration's values) into every leaf of that type, four times per leaf:
+    in __init__, _set_*, the _set_* error message and _unset_*. Some are large
+    (e.g. the srv6 endpoint behaviours, ~22KB), so they can make up most of a
+    file. Define each distinct dict once, before the first class, and refer to
+    it by name. pyangbind deep-copies restriction_arg before changing it, so
+    sharing one dict between leaves is safe.
+    """
+    marker = "restriction_arg="
+    names = {}
+    pieces = []
+    pos = 0
+    while (i := text.find(marker + "{", pos)) != -1:
+        start = i + len(marker)
+        literal = next((lit for lit in names if text.startswith(lit, start)), None)
+        if literal is None:
+            literal = text[start : end_of_dict_literal(text, start)]
+            names[literal] = f"_restriction_arg_{len(names)}"
+        pieces += [text[pos:start], names[literal]]
+        pos = start + len(literal)
+    pieces.append(text[pos:])
+    text = "".join(pieces)
+
+    if not names:
+        return text
+    defs = "".join(f"{name} = {literal}\n" for literal, name in names.items())
+    first_class = text.find("\nclass ")
+    if first_class == -1:
+        return text
+    return f"{text[:first_class]}\n{defs}{text[first_class:]}"
 
 
 def die(msg):

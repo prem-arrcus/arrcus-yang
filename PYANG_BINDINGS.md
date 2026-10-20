@@ -160,8 +160,8 @@ pyangbind as usual. Whatever is left is what gets generated.
 
 ### Plugin options
 The plugin registers a new output format, `-f pybind-split`. With no extra options
-its output is the same as `-f pybind`, except for the submodule duplicates
-described below. It adds:
+its output is the same as `-f pybind`, except for the two size reductions
+described below (submodule duplicates, shared dicts). It adds:
 
 | Option                         | Effect                                                             |
 |--------------------------------|--------------------------------------------------------------------|
@@ -202,13 +202,26 @@ own tree refers to them. `openconfig-network-instance` includes
 which doubled the size of most oper files and added 8.5MB to the config file. The
 plugin skips these copies.
 
+### Shared identity and enumeration dicts
+For an identityref or enumeration leaf, pyangbind writes the whole dict of allowed
+values into the generated code, and does so four times per leaf: in `__init__`,
+`_set_<leaf>`, the error message of `_set_<leaf>`, and `_unset_<leaf>`. Some of these
+dicts are large, e.g. the srv6 endpoint behaviours (~22KB) or the IS-IS TLV22
+sub-TLV types. Before this change they made up 31% of the bgp file and 75% of the
+isis file.
+
+The plugin defines each distinct dict once, as `_restriction_arg_<n>` before the
+first class, and refers to it by name. Only the text changes: expanding the names
+again gives exactly the original output. pyangbind deep-copies the dict before it
+changes anything, so leaves can safely share one.
+
 ## Why the bgp oper file is still large
-Most of `oper/bgp_bindings.py` (~64MB of ~74MB) is `bgp/rib`. pyangbind generates a
+Most of `oper/bgp_bindings.py` is `bgp/rib`. pyangbind generates a
 separate class for every place a grouping is used. In
 `arcos-openconfig-rib-bgp-augments.yang`, the `route-attr-set-top` grouping (the
 "embedded path attributes" of a route, about 50 classes) is augmented into every
 route list: loc-rib, adj-rib-in-pre, adj-rib-in-post and adj-rib-out of every
-AFI-SAFI, 61 uses in all. That alone accounts for ~40MB. Each route also refers to
+AFI-SAFI, 61 uses in all. That accounts for over half of the file. Each route also refers to
 the same attributes in the shared `rib/attr-sets` through `attr-index`. Making
 the file much smaller would mean changing the model, i.e. the API.
 
