@@ -20,6 +20,18 @@ cd arrcus-yang
 This would result in a `aminor/` directory getting created, which would contain only
 `*.yang` files from the `aminor` branch of `arrcus_sw` repo.
 
+## Building pyang bindings
+`build_pyang_bindings.sh` generates Python bindings ([pyangbind](https://github.com/robshakir/pyangbind))
+for the YANG files of a specified branch
+
+```bash
+./build_pyang_bindings.sh aminor
+```
+
+Besides the full `build/<target>/bindings.py`, this produces a config-only
+`config_bindings.py` and one oper-state bindings file per component under `oper/`.
+See [PYANG_BINDINGS.md](PYANG_BINDINGS.md) for how and why the bindings are split.
+
 ## Contacts
 prem@arrcus.com
 

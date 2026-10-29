@@ -1,0 +1,153 @@
+# Components for the per-component oper-state bindings built by build_pyang_bindings.sh
+#
+# Format: <component> <schema-path>
+#   - one oper bindings file per component: build/<target>/oper/<component>_bindings.py
+#     ('-' in the component name becomes '_' in the file name)
+#   - repeat a component on several lines to give it several subtrees
+#   - paths are '/module:name/name/other-module:name/...'; the prefix is a YANG
+#     module name and is needed only where a node comes from a different module
+#     than its parent (e.g. augments); choice/case nodes are not part of the path
+#   - logs/<target>/unclaimed-state.txt lists state not covered by any path here
+
+# --- Network-instance protocols -------------------------------------------------
+bgp             /openconfig-network-instance:network-instances/network-instance/protocols/protocol/bgp
+ospf            /openconfig-network-instance:network-instances/network-instance/protocols/protocol/arcos-ospf:ospfv2
+ospf            /openconfig-network-instance:network-instances/network-instance/protocols/protocol/arcos-ospf:ospfv3
+isis            /openconfig-network-instance:network-instances/network-instance/protocols/protocol/isis
+pim             /openconfig-network-instance:network-instances/network-instance/protocols/protocol/arcos-pim:pim
+igmp            /openconfig-network-instance:network-instances/network-instance/protocols/protocol/arcos-igmp:igmp
+rsvp            /openconfig-network-instance:network-instances/network-instance/protocols/protocol/arcos-rsvp:rsvp
+
+# --- Network-instance features --------------------------------------------------
+network-instance /openconfig-network-instance:network-instances/network-instance/interfaces
+network-instance /openconfig-network-instance:network-instances/network-instance/tables
+network-instance /openconfig-network-instance:network-instances/network-instance/table-connections
+network-instance /openconfig-network-instance:network-instances/network-instance/protocols/protocol/state
+network-instance /openconfig-network-instance:network-instances/network-instance/fdb
+network-instance /openconfig-network-instance:network-instances/network-instance/arcos-openconfig-network-instance-augments:fdb-units
+network-instance /openconfig-network-instance:network-instances/network-instance/arcos-openconfig-network-instance-augments:l3vrf
+aft             /openconfig-network-instance:network-instances/network-instance/afts
+aft             /openconfig-network-instance:network-instances/network-instance/afts-units
+mrib            /openconfig-network-instance:network-instances/network-instance/arcos-mrib-flock-oper:mrib
+mpls            /openconfig-network-instance:network-instances/network-instance/mpls/global
+mpls            /openconfig-network-instance:network-instances/network-instance/mpls/arcos-rib:label-stats-entries
+mpls            /openconfig-network-instance:network-instances/network-instance/segment-routing
+ldp             /openconfig-network-instance:network-instances/network-instance/mpls/signaling-protocols/ldp
+te              /openconfig-network-instance:network-instances/network-instance/arcos-te:te
+te              /openconfig-network-instance:network-instances/network-instance/mpls/arcos-mpls-te:mpls-te
+rib             /openconfig-network-instance:network-instances/network-instance/arcos-rib:rib
+rib             /openconfig-network-instance:network-instances/network-instance/arcos-rib:rib-options
+fib             /openconfig-network-instance:network-instances/network-instance/arcos-fib:fib
+l2rib           /openconfig-network-instance:network-instances/network-instance/arcos-l2rib:l2rib
+l2rib           /arcos-l2rib:l2rib
+sr-policy       /openconfig-network-instance:network-instances/network-instance/arcos-sr-policy:sr-policy
+srv6            /openconfig-network-instance:network-instances/network-instance/arcos-srv6:srv6
+vxlan           /openconfig-network-instance:network-instances/network-instance/arcos-vxlan:vni
+vxlan           /arcos-vxlan:overlay
+sla             /openconfig-network-instance:network-instances/network-instance/arcos-sla-icmp:sla
+twamp           /openconfig-network-instance:network-instances/network-instance/arcos-twamp:twamp
+ip-tunnels      /openconfig-network-instance:network-instances/network-instance/arcos-openconfig-network-instance-augments:ip-tunnels
+ip-tunnels      /openconfig-network-instance:network-instances/network-instance/arcos-openconfig-network-instance-augments:ip-tunnels-units
+
+# --- Interfaces -----------------------------------------------------------------
+interfaces      /openconfig-interfaces:interfaces
+interfaces      /ietf-interfaces:interfaces-state
+interfaces      /arcos-interfaces-cache:ifcache-entries
+lacp            /openconfig-lacp:lacp
+vlans           /openconfig-vlan:vlans
+
+# --- Infra ----------------------------------------------------------------------
+# System, platform and management state that isn't a network protocol, all in
+# one file: oper/infra_bindings.py
+# system
+infra           /openconfig-system:system
+infra           /arcos-process:processes
+infra           /arcos-event:event
+infra           /arcos-license:licenses
+infra           /arcos-trace:trace
+infra           /arcos-corefile:cores
+infra           /arcos-apply-path:apply-paths
+# runtime
+infra           /arcos-runtime:runtime-instances
+# hardware
+infra           /arcos-hardware:hardware
+infra           /arcos-chassis:chassis
+# platform
+infra           /openconfig-platform:components
+# datapath
+infra           /arcos-datapath:datapath-instances
+infra           /arcos-dpal:dpal
+# mbroker
+infra           /arcos-mbroker:mbroker
+infra           /arcos-mpsc:mpsc-client
+# adjmgr
+infra           /arcos-adjmgr:adjmgr
+# debug
+infra           /arcos-debug:debug
+# telemetry
+infra           /openconfig-telemetry:telemetry-system
+# monitor
+infra           /arcos-monitor:monitor-session
+# multicloud
+infra           /arcos-multicloud:multicloud
+# keychain
+infra           /openconfig-keychain:keychains
+# sync
+infra           /arcos-sync-e:sync-e
+infra           /arcos-gnss:gnss
+infra           /arcos-dpll:dpll
+# neighbor
+infra           /arcos-neighbor:arp-entries
+infra           /arcos-neighbor:ndp-entries
+infra           /arcos-arp-nd-global:ip-neighbor
+
+# --- Features -------------------------------------------------------------------
+acl             /openconfig-acl:acl
+acl             /openconfig-defined-sets:defined-sets
+acl             /arcos-fqdn-filter:fqdn-filter
+qos             /arcos-qos:qos
+copp            /arcos-copp:copp
+copp            /arcos-copp-service-policy:control-plane
+routing-policy  /openconfig-routing-policy:routing-policy
+bfd             /openconfig-bfd:bfd
+lldp            /openconfig-lldp:lldp
+stp             /openconfig-spanning-tree:stp
+macsec          /openconfig-macsec:macsec
+ipsec           /ietf-ipsec-ike:ipsec-ike
+nat             /ietf-nat:nat
+ipfix           /ietf-ipfix-psamp:ipfix
+sflow           /arcos-sflow:sflow
+relay-agent     /openconfig-relay-agent:relay-agent
+evpn            /arcos-evpn:evpn
+oam             /arcos-oam:oam
+port-security   /arcos-portsec:port-security
+ptp             /ietf-ptp:ptp
+
+# --- SNMP MIBs ------------------------------------------------------------------
+snmp-mibs       /ARRCUS-BGP4V2-MIB:ARRCUS-BGP4V2-MIB
+snmp-mibs       /ARRCUS-ENTITY-SENSOR-MIB:ARRCUS-ENTITY-SENSOR-MIB
+snmp-mibs       /ARRCUS-IF-MIB:ARRCUS-IF-MIB
+snmp-mibs       /ARRCUS-SYS-MIB:ARRCUS-SYS-MIB
+snmp-mibs       /ARRCUS-SYSTEM-TRAPS-MIB:ARRCUS-SYSTEM-TRAPS-MIB
+snmp-mibs       /BGP4-MIB:BGP4-MIB
+snmp-mibs       /DIFFSERV-MIB:DIFFSERV-MIB
+snmp-mibs       /ENTITY-MIB:ENTITY-MIB
+snmp-mibs       /ENTITY-SENSOR-MIB:ENTITY-SENSOR-MIB
+snmp-mibs       /HOST-RESOURCES-MIB:HOST-RESOURCES-MIB
+snmp-mibs       /IF-MIB:IF-MIB
+snmp-mibs       /INTEGRATED-SERVICES-MIB:INTEGRATED-SERVICES-MIB
+snmp-mibs       /IP-FORWARD-MIB:IP-FORWARD-MIB
+snmp-mibs       /IP-MIB:IP-MIB
+snmp-mibs       /LLDP-MIB:LLDP-MIB
+snmp-mibs       /MPLS-LDP-STD-MIB:MPLS-LDP-STD-MIB
+snmp-mibs       /MPLS-LSR-STD-MIB:MPLS-LSR-STD-MIB
+snmp-mibs       /NTPv4-MIB:NTPv4-MIB
+snmp-mibs       /OPENCONFIG-ACL:OPENCONFIG-ACL
+snmp-mibs       /OSPF-MIB:OSPF-MIB
+snmp-mibs       /OSPF-TRAP-MIB:OSPF-TRAP-MIB
+snmp-mibs       /RFC1213-MIB:RFC1213-MIB
+snmp-mibs       /RMON-MIB:RMON-MIB
+snmp-mibs       /RMON2-MIB:RMON2-MIB
+snmp-mibs       /SYSAPPL-MIB:SYSAPPL-MIB
+snmp-mibs       /TOKEN-RING-RMON-MIB:TOKEN-RING-RMON-MIB
+snmp-mibs       /UCD-SNMP-MIB:UCD-SNMP-MIB

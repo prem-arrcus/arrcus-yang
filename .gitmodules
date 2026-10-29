@@ -1,0 +1,6 @@
+[submodule "v8.2.3B"]
+	path = confd/v8.2.3B
+	url = git@github.com:Arrcus/confd.git
+[submodule "irfan-mcast-latest-v8.2.3B"]
+	path = irfan-mcast-latest-v8.2.3B
+	url = git@github.com:irfanm-arrcus/arrcus_sw.git

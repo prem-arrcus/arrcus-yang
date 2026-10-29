@@ -21,12 +21,11 @@ BRANCH="${1:-aminor}"
 TARGET="${2:-$BRANCH}"
 REPO="${3:-git@github.com:Arrcus/arrcus_sw.git}"
 
+# Path of the invocation dir relative to the top dir (e.g. 'confd/'), taken
+# before changing to the top dir
+PREFIX="$(git rev-parse --show-prefix)"
 TOP_DIR="$(git rev-parse --show-toplevel)"
 cd "$TOP_DIR"
-
-INVOCATION_DIR="$(pwd -P)"
-PREFIX=""
-[ "$INVOCATION_DIR" == "$TOP_DIR" ] && PREFIX="" || PREFIX="${INVOCATION_DIR#${TOP_DIR}/}/"
 
 # MODULE_NAME is the submodule name (--name, .git/modules dir, config key);
 # TARGET_NAME is its path, which may carry the invocation-dir prefix.
@@ -55,25 +54,27 @@ else
 fi
 echo
 
-if git config --get-all "submodule.${MODULE_NAME}.url" >/dev/null; then
+# Check .gitmodules rather than git config: the config is shared by all
+# worktrees, so a submodule added in another worktree would show up there
+if git config -f .gitmodules --get "submodule.${MODULE_NAME}.path" >/dev/null 2>&1; then
     echo "Found submodule $TARGET_NAME"
 else
     echo "Setting $TARGET_NAME as a git submodule"
-    echo "git submodule add --name ${MODULE_NAME} ${REPO} ${TARGET_NAME}"
-    # 'git submodule add' refuses ignored paths and has no force flag, so
-    # un-ignore temporarily; the exception is removed again right after the add
-    printf '!%s\n' "${TARGET_NAME}" >> .gitignore
-    git submodule add --name "${MODULE_NAME}" "${REPO}" "${TARGET_NAME}"
+    echo "git submodule add --force --name ${MODULE_NAME} ${REPO} ${TARGET_NAME}"
+    # .gitignore ignores everything, so --force is needed to add the (ignored)
+    # path. Once added, the tracked gitlink is not subject to ignore rules
+    git submodule add --force --name "${MODULE_NAME}" "${REPO}" "${TARGET_NAME}"
     git submodule absorbgitdirs -- "${TARGET_NAME}"
-    # The temporary '!${TARGET_NAME}' exception is no longer needed: a tracked
-    # gitlink is not subject to ignore rules
-    { grep -vxF "!${TARGET_NAME}" .gitignore || true; } > .gitignore.tmp && mv .gitignore.tmp .gitignore
     echo
 fi
 
 echo "Setting sparse checkout to grab only yang files"
 git -C "${TARGET_NAME}" config core.sparseCheckout true
-echo '*.yang' >> .git/modules/${MODULE_NAME}/info/sparse-checkout
+# Ask git for the path: the submodule's git dir isn't always .git/modules/<name>
+# (e.g. in a worktree, or before absorbgitdirs)
+SPARSE_FILE="$(git -C "${TARGET_NAME}" rev-parse --path-format=absolute --git-path info/sparse-checkout)"
+mkdir -p "$(dirname "${SPARSE_FILE}")"
+echo '*.yang' > "${SPARSE_FILE}"
 # The --no-checkout clone left an empty index; submodule update is a no-op
 # when HEAD is already at the recorded sha, so check out explicitly.
 git -C "${TARGET_NAME}" checkout -f "${BRANCH}"

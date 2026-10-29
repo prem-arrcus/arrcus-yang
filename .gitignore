@@ -5,6 +5,10 @@
 !.gitignore
 !pull.sh
 !build_pyang_bindings.sh
+!oper-components.txt
+!PYANG_BINDINGS.md
+!plugins
+!plugins/*.py
 !yang-changes.patch
 !confd
 confd/*
