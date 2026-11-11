@@ -45,7 +45,9 @@ echo "TARGET_NAME: $TARGET_NAME, MODULE_NAME: $MODULE_NAME, PREFIX: $PREFIX"
 echo
 
 echo "Shallow clone '$BRANCH' branch of $REPO"
-if [ -d "${TARGET_NAME}" ]; then
+# Check for a checkout, not just the dir: an uninitialized submodule leaves behind an empty dir,
+# and 'git -C <empty dir> pull' would pull this repo instead. 'git clone' accepts an empty dir.
+if [ -e "${TARGET_NAME}/.git" ]; then
     echo " -- Updating yang files"
     git -C "${TARGET_NAME}" pull --rebase
 else
