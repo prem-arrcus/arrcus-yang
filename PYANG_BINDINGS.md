@@ -66,8 +66,6 @@ So a module or directory does not map to a component. Instead, the manifest
 paths**, and the oper file for that component contains the state found under
 those paths.
 
-(Figures are from the `irfan-mcast-latest-v8.2.3B` tree.)
-
 ## The manifest: `oper-components.txt`
 Each line is `<component> <schema-path>`. Lines starting with `#` are comments.
 

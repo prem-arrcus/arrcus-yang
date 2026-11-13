@@ -184,14 +184,16 @@ else
 fi
 
 # Pull needed yang files off specified branch from arrcus_sw repo
-if [ ! -d "$TARGET_NAME" ]; then
+# Check for a checkout, not just the dir: a submodule that isn't initialized (e.g. arrcus-yang
+# checked out without --recursive) leaves behind an empty dir
+if [ ! -e "$TARGET_NAME/.git" ]; then
     echo "Pulling yang files"
     ./pull.sh "$BRANCH" "$TARGET_NAME" "$REPO" || die "Pulling yang files from arrcus_sw repo (branch: $BRANCH) had failed"
     echo
 fi
 
 # Pull needed yang files off specified branch from confd repo
-if [ ! -d "confd/$CONFD_BRANCH" ]; then
+if [ ! -e "confd/$CONFD_BRANCH/.git" ]; then
     echo "Pulling confd"
     mkdir -p confd
     pushd confd >/dev/null
@@ -211,8 +213,10 @@ echo "PLUGIN_DIR: $PLUGIN_DIR, BINDINGS: $BINDINGS, JOBS: $JOBS"
 skip_modules_re='(deviations|annotations|ann).yang|^third_party'
 yang_modules=()
 for f in **/*.yang; do
+  [ -e "$f" ] || continue
   [[ "$f" =~ $skip_modules_re ]] || yang_modules+=("$f")
 done
+(( ${#yang_modules[@]} > 0 )) || die "No yang files found in ${TARGET_NAME}/; pulling them from $REPO (branch: $BRANCH) had probably failed"
 deviations=()
 for f in **/*deviations.yang; do
   [ -e "$f" ] || continue
