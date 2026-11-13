@@ -153,22 +153,35 @@ if want oper; then
 fi
 
 # Virtual Env
-echo "Preparing virtual env"
-VENV=".env"
-if [ ! -d "$VENV" ]; then
-    echo " -- Creating virtual env"
-    uv venv $VENV || die "Creating python virtual venv ($VENV) failed"
+# Already in a venv (activated, or its python3 first in PATH): use it as is, as long as it
+# has pyang and pyangbind. Otherwise, create (or reuse) .env here and install them into it.
+in_venv() {
+  [[ -n "${VIRTUAL_ENV:-}" ]] || python3 -c 'import sys; sys.exit(sys.prefix == sys.base_prefix)' 2>/dev/null
+}
+if in_venv; then
+    echo "Using the current virtual env: ${VIRTUAL_ENV:-$(python3 -c 'import sys; print(sys.prefix)')}"
+    command -v pyang >/dev/null || die "pyang isn't installed in the current virtual env. Install it with:\n  uv pip install git+ssh://git@github.com/prem-arrcus/pyang.git"
+    python3 -c 'import pyangbind' 2>/dev/null || die "pyangbind isn't installed in the current virtual env. Install it with:\n  uv pip install git+ssh://git@github.com/prem-arrcus/pyangbind.git"
+    echo " -- Found pyang ($(command -v pyang)) and pyangbind"
     echo
 else
-    echo " -- Using existing virtual env"
+    echo "Preparing virtual env"
+    VENV=".env"
+    if [ ! -d "$VENV" ]; then
+        echo " -- Creating virtual env"
+        uv venv $VENV || die "Creating python virtual venv ($VENV) failed"
+        echo
+    else
+        echo " -- Using existing virtual env"
+    fi
+    # Install needed python pkgs
+    echo " -- Installing pyang module"
+    # shellcheck source=/dev/null
+    source "${VENV}/bin/activate" || die "Activating python virtual venv ($VENV) failed"
+    uv pip install "git+ssh://git@github.com/prem-arrcus/pyang.git"
+    uv pip install "git+ssh://git@github.com/prem-arrcus/pyangbind.git"
+    echo
 fi
-# Install needed python pkgs
-echo " -- Installing pyang module"
-# shellcheck source=/dev/null
-source "${VENV}/bin/activate" || die "Activating python virtual venv ($VENV) failed"
-uv pip install "git+ssh://git@github.com/prem-arrcus/pyang.git"
-uv pip install "git+ssh://git@github.com/prem-arrcus/pyangbind.git"
-echo
 
 # Pull needed yang files off specified branch from arrcus_sw repo
 if [ ! -d "$TARGET_NAME" ]; then
