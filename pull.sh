@@ -67,6 +67,9 @@ else
     git submodule absorbgitdirs -- "${TARGET_NAME}"
     echo
 fi
+# The build patches the pulled yang files (yang-changes.patch); don't report them as
+# modified content in 'git status'. A change of the checked out commit is still reported
+git config -f .gitmodules "submodule.${MODULE_NAME}.ignore" dirty
 
 echo "Setting sparse checkout to grab only yang files"
 git -C "${TARGET_NAME}" config core.sparseCheckout true
