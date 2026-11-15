@@ -1,93 +1,84 @@
 #!/usr/bin/env bash
-# 
-# Script to pull yang files from arrcus_sw repo
-# Usage: ./pull.sh [branch=<aminor>] [target-dir=<branch>]
+#
+# Clone (or update) the yang files of a branch of the arrcus_sw repo (or of another repo, e.g.
+# confd) into a standalone, shallow, sparse (*.yang only) clone.
+#
+# An existing clone is updated to the branch's latest commit (or to the specified commit):
+# yang-changes.patch is reverted first, as any other local change would make the update fail.
+# The patch isn't applied again; build_pyang_bindings.sh does that.
 usage() {
-    echo "./pull.sh [branch=<aminor>] [target-dir=<branch>] [repo=<git@github.com:Arrcus/arrcus_sw.git>]"
+    echo "./pull.sh [branch=<aminor>] [target-dir=<branch, with '/' replaced by '-'>] [repo=<git@github.com:Arrcus/arrcus_sw.git>] [commit=<branch's latest>]"
     echo
     echo "Example:"
     echo "  ./pull.sh aminor"
+    echo "  ./pull.sh v8.2.3B src/confd/v8.2.3B git@github.com:Arrcus/confd.git"
     echo
     exit 1
 }
 for arg in "$@"; do
-    if [[ "$arg" =~ ^-.*$|.*\s-.*/$ ]]; then
+    if [[ "$arg" =~ ^-h$|^--h.*$ ]]; then
         usage
     fi
 done
 
 set -euo pipefail
+# shellcheck source=lib.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+
 BRANCH="${1:-aminor}"
-TARGET="${2:-$BRANCH}"
+TARGET="${2:-${BRANCH//\//-}}"
 REPO="${3:-git@github.com:Arrcus/arrcus_sw.git}"
+COMMIT="${4:-}"
 
-# Path of the invocation dir relative to the top dir (e.g. 'confd/'), taken
-# before changing to the top dir
-PREFIX="$(git rev-parse --show-prefix)"
-TOP_DIR="$(git rev-parse --show-toplevel)"
-cd "$TOP_DIR"
+echo "BRANCH: $BRANCH, TARGET: $TARGET, REPO: $REPO${COMMIT:+, COMMIT: $COMMIT}"
 
-# MODULE_NAME is the submodule name (--name, .git/modules dir, config key);
-# TARGET_NAME is its path, which may carry the invocation-dir prefix.
-if [[ -n "${2:-}" ]]; then
-    # Explicit target dir: use as given (may be nested, e.g. confd/v8.2.3B),
-    # module name is its leaf
-    TARGET_NAME="${PREFIX}${TARGET}"
-    MODULE_NAME="${TARGET##*/}"
-else
-    # Target derived from the branch name: flatten '/' so it is a single dir name
-    TARGET_NAME="${PREFIX}${BRANCH//\//-}"
-    MODULE_NAME="${BRANCH//\//-}"
-fi
+# Fetch the commit (or the branch's latest), as the only commit of the shallow clone's history.
+# Prints the fetched commit
+fetch() {
+    local ref="${COMMIT:-refs/heads/${BRANCH}}"
+    git -C "$TARGET" fetch --quiet --depth=1 --filter=blob:none origin "$ref" >&2 ||
+        die "Fetching $ref of $REPO had failed"
+    git -C "$TARGET" rev-parse FETCH_HEAD
+}
 
-echo "BRANCH: $BRANCH, TARGET: $TARGET, REPO: $REPO"
-echo "TARGET_NAME: $TARGET_NAME, MODULE_NAME: $MODULE_NAME, PREFIX: $PREFIX"
-echo
-
-echo "Shallow clone '$BRANCH' branch of $REPO"
 # Check for a checkout, not just the dir: an uninitialized submodule leaves behind an empty dir,
-# and 'git -C <empty dir> pull' would pull this repo instead. 'git clone' accepts an empty dir.
-if [ -e "${TARGET_NAME}/.git" ]; then
-    echo " -- Updating yang files"
-    git -C "${TARGET_NAME}" pull --rebase
+# and 'git -C <empty dir>' would act on the repo containing it
+if [ -e "${TARGET}/.git" ]; then
+    url="$(git -C "$TARGET" remote get-url origin)"
+    [[ "$url" == "$REPO" ]] || die "$TARGET is a clone of $url, not of $REPO"
+
+    echo " -- Updating the yang files"
+    (cd "$TARGET" && revert_yang_patch)
+    if [[ -n "$(git -C "$TARGET" status --porcelain --untracked-files=no)" ]]; then
+        die "$TARGET has local changes (other than $(basename "$PATCH_FILE")):\n$(git -C "$TARGET" status --short --untracked-files=no)"
+    fi
+    old="$(git -C "$TARGET" rev-parse HEAD)"
+    new="$(fetch)"
+    if [[ "$old" == "$new" ]]; then
+        echo " -- Already at ${new}"
+    else
+        git -C "$TARGET" checkout --quiet -f -B "$BRANCH" "$new"
+        echo " -- Updated ${old} -> ${new}"
+    fi
 else
-    echo " -- Pulling yang files"
-    git clone --no-checkout --branch "${BRANCH}" --depth=1 --filter=blob:none --single-branch "${REPO}" "${TARGET_NAME}"
+    echo " -- Cloning the yang files"
+    # 'git clone' accepts an existing empty dir
+    git clone --quiet --no-checkout --branch "$BRANCH" --depth=1 --filter=blob:none --single-branch "$REPO" "$TARGET"
+    new="$(git -C "$TARGET" rev-parse HEAD)"
+    if [[ -n "$COMMIT" && "$COMMIT" != "$new" ]]; then
+        new="$(fetch)"
+    fi
+
+    echo " -- Setting sparse checkout, to grab only the yang files"
+    git -C "$TARGET" config core.sparseCheckout true
+    # Ask git for the path: the git dir isn't always <target>/.git
+    SPARSE_FILE="$(git -C "$TARGET" rev-parse --path-format=absolute --git-path info/sparse-checkout)"
+    mkdir -p "$(dirname "$SPARSE_FILE")"
+    echo '*.yang' > "$SPARSE_FILE"
+    # The --no-checkout clone left an empty index, so check out explicitly
+    git -C "$TARGET" checkout --quiet -f -B "$BRANCH" "$new"
+    echo " -- Cloned ${new}"
 fi
-echo
-
-# Check .gitmodules rather than git config: the config is shared by all
-# worktrees, so a submodule added in another worktree would show up there
-if git config -f .gitmodules --get "submodule.${MODULE_NAME}.path" >/dev/null 2>&1; then
-    echo "Found submodule $TARGET_NAME"
-else
-    echo "Setting $TARGET_NAME as a git submodule"
-    echo "git submodule add --force --name ${MODULE_NAME} ${REPO} ${TARGET_NAME}"
-    # .gitignore ignores everything, so --force is needed to add the (ignored)
-    # path. Once added, the tracked gitlink is not subject to ignore rules
-    git submodule add --force --name "${MODULE_NAME}" "${REPO}" "${TARGET_NAME}"
-    git submodule absorbgitdirs -- "${TARGET_NAME}"
-    echo
-fi
-# The build patches the pulled yang files (yang-changes.patch); don't report them as
-# modified content in 'git status'. A change of the checked out commit is still reported
-git config -f .gitmodules "submodule.${MODULE_NAME}.ignore" dirty
-
-echo "Setting sparse checkout to grab only yang files"
-git -C "${TARGET_NAME}" config core.sparseCheckout true
-# Ask git for the path: the submodule's git dir isn't always .git/modules/<name>
-# (e.g. in a worktree, or before absorbgitdirs)
-SPARSE_FILE="$(git -C "${TARGET_NAME}" rev-parse --path-format=absolute --git-path info/sparse-checkout)"
-mkdir -p "$(dirname "${SPARSE_FILE}")"
-echo '*.yang' > "${SPARSE_FILE}"
-# The --no-checkout clone left an empty index; submodule update is a no-op
-# when HEAD is already at the recorded sha, so check out explicitly.
-git -C "${TARGET_NAME}" checkout -f "${BRANCH}"
-echo
-
-echo "Updating"
-git submodule update --checkout "${TARGET_NAME}"
-echo
 
 echo "Done"
-echo "$TARGET_NAME is sparse-checked-out with *.yang files from arrcus_sw repo (branch: $BRANCH)"
+echo "$TARGET has the *.yang files of $REPO (branch: $BRANCH, commit: $(git -C "$TARGET" rev-parse HEAD))"

@@ -130,7 +130,8 @@ oper file. This will change once the IGMP model gets real state.
 
 ## Coverage report
 With `oper` enabled, the build also checks which state is not claimed by any
-path in the manifest. It writes `logs/<target>/unclaimed-state.txt`, listing each
+path in the manifest (in the same pyang run as the fingerprints, see below). It writes
+`<log-dir>/unclaimed-state.txt`, listing each
 top-most unclaimed state subtree with its leaf count, and prints it as a warning
 at the end of the build:
 
@@ -142,6 +143,45 @@ at the end of the build:
 
 This list should contain only intentional gaps, such as `arcos-debug` and
 `*-clear` RPC-style trees. Anything else most likely needs a manifest entry.
+
+## Incremental builds
+With `INCREMENTAL=1`, only the bindings whose inputs changed since the build in `<build-dir>`
+are rebuilt:
+
+- `config.py` (and `bindings.py`): when any YANG file changed
+- `oper/<component>.py`: when the component's fingerprint changed (or the file is missing).
+  The files of components no longer in `oper-components.txt` are removed
+
+Everything is rebuilt when there's no earlier build, or when it was built by other tools
+(`tools_fp`: the plugins, the scripts, `BINDINGS`, the pyang and pyangbind versions).
+
+The fingerprints come from another plugin, `plugins/pybind_fp.py` (`-f pybind-fp`), in one pyang
+run over all the components. A component's fingerprint is a hash of what pyangbind consumes to
+build it, taken from the compiled schema (`uses` expanded, augments merged, deviations applied):
+
+- the path down to each of its subtrees, with the list keys
+- every node in its subtrees, with all their substatements
+- the typedef chains of their types, and the type of the leaf each leafref points to
+- the identities derived from the base of each identityref, in any module
+
+So it changes whichever file a change comes from, e.g. another module augmenting into the
+component's subtree, or a deviation removing a node from it. It covers more than pyangbind emits
+(config nodes, descriptions); that only causes a rebuild that wasn't needed.
+
+Fingerprinting takes about as long as building one component (parsing the schema dominates), so
+an incremental build of one component takes about half as long as a full build. A full build
+runs the fingerprinting as one more parallel job.
+
+The fingerprints of the build's inputs as a whole (`./build_pyang_bindings.sh fingerprint`) are
+plain hashes of the files:
+
+| Fingerprint   | Of                                                                      |
+|---------------|-------------------------------------------------------------------------|
+| `yang_src_fp` | the YANG files of the clone (with `yang-changes.patch` applied) and of confd |
+| `yang_fp`     | `yang_src_fp` and `oper-components.txt`                                 |
+| `tools_fp`    | the plugins, the scripts, `BINDINGS`, the pyang and pyangbind versions  |
+
+DAF uses them to reuse a build of the same inputs, e.g. of another branch.
 
 ## How the split works
 The split is done by a small pyang plugin, `plugins/pybind_split.py`, which wraps

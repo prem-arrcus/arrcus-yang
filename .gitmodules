@@ -1,4 +1,0 @@
-[submodule "v8.2.3B"]
-	path = confd/v8.2.3B
-	url = git@github.com:Arrcus/confd.git
-	ignore = dirty
