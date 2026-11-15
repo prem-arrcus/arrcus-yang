@@ -4,6 +4,7 @@
 # But not these files...
 !.gitignore
 !pull.sh
+!lib.sh
 !build_pyang_bindings.sh
 !oper-components.txt
 !PYANG_BINDINGS.md
